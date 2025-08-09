@@ -89,6 +89,15 @@ body {
   animation: breathe 2s ease-in-out infinite;
 }
 
+/* Voice orb animation delays */
+.animation-delay-75 {
+  animation-delay: 75ms;
+}
+
+.animation-delay-150 {
+  animation-delay: 150ms;
+}
+
 /* Smooth page transitions */
 .page-transition {
   transition: all 0.3s ease-in-out;

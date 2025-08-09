@@ -2,13 +2,33 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Conversation } from './components/conversation';
+import { VoiceOrb } from './components/voice-orb';
 
 export default function SymptomChecker() {
   const router = useRouter();
   const [isListening, setIsListening] = useState(false);
+  const [conversationStatus, setConversationStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+
+  const conversation = Conversation({
+    isListening,
+    onConversationStart: () => {
+      setIsListening(true);
+      setConversationStatus('connected');
+    },
+    onConversationEnd: () => {
+      setIsListening(false);
+      setConversationStatus('disconnected');
+    },
+  });
 
   const handleMicClick = () => {
-    setIsListening(!isListening);
+    if (conversationStatus === 'connected') {
+      conversation.stopConversation();
+    } else {
+      setConversationStatus('connecting');
+      conversation.startConversation();
+    }
   };
 
   const handleBack = () => {
@@ -74,66 +94,57 @@ export default function SymptomChecker() {
 
       {/* Main Content */}
       <div className="px-4 py-6 sm:px-6 sm:py-8">
-        {/* Large Mic Button */}
-        <div className="flex flex-col items-center mb-8 sm:mb-12">
-          <button
-            onClick={handleMicClick}
-            className={`
-              relative w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80
-              rounded-full shadow-2xl 
-              transition-all duration-500 ease-out
-              hover:scale-105 hover:shadow-3xl
-              active:scale-95
-              focus:outline-none focus:ring-4
-              ${isListening ? 'animate-pulse' : ''}
-            `}
-            style={{
-              background: `linear-gradient(to bottom right, var(--tertiary-pink), var(--tertiary-pink-dark))`,
-              boxShadow: isListening ? `0 35px 60px -12px var(--tertiary-pink-light)` : undefined,
-              '--tw-ring-color': 'var(--tertiary-pink-light)'
-            } as React.CSSProperties}
-          >
-            {/* Outer glow ring */}
-            <div className="absolute -inset-2 sm:-inset-4 rounded-full opacity-30 blur-xl" style={{background: `linear-gradient(to right, var(--tertiary-pink-light), var(--tertiary-pink))`}}></div>
-            
-            {/* Listening animation ring */}
-            <div className={`
-              absolute inset-0 rounded-full 
-              ${isListening ? 'animate-ping opacity-30' : ''}
-            `} style={{backgroundColor: isListening ? 'var(--tertiary-pink)' : undefined}}></div>
-            
-            {/* Microphone Icon */}
-            <div className="relative z-10 flex items-center justify-center h-full">
-              <svg 
-                className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 text-white drop-shadow-lg" 
-                fill="currentColor" 
-                viewBox="0 0 20 20"
-              >
-                <path 
-                  fillRule="evenodd" 
-                  d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" 
-                  clipRule="evenodd" 
-                />
-              </svg>
-            </div>
-          </button>
-        </div>
+        {/* Voice Orb */}
+        <VoiceOrb
+          isListening={isListening}
+          isSpeaking={conversation.status === 'connected' && conversation.isSpeaking}
+          onClick={handleMicClick}
+          conversationStatus={conversationStatus}
+        />
 
         {/* Instructions */}
         <div className="text-center mb-6 sm:mb-8">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-gray-900 mb-3 sm:mb-4">
             Tell us what's troubling you
           </h2>
+          
+          {/* Conversation Status */}
+          <div className="mb-4">
+            <p className="text-lg font-medium text-gray-800 mb-2">
+              Status: {conversationStatus === 'connected' ? 'Listening...' : 
+                      conversationStatus === 'connecting' ? 'Connecting...' : 'Ready to start'}
+            </p>
+            {conversation.status === 'connected' && (
+              <p className="text-base text-gray-600">
+                Agent is {conversation.isSpeaking ? 'speaking' : 'listening'}
+              </p>
+            )}
+          </div>
+
           <p className="text-gray-600 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto mb-6 sm:mb-8 px-2">
-            Tap the microphone and describe your symptoms clearly. For example: 
-            <span className="block mt-2 text-gray-800 font-medium text-sm sm:text-base">
-              "I have chest pain since yesterday"
-            </span>
+            {conversationStatus === 'connected' 
+              ? 'Speak now - describe your symptoms clearly'
+              : 'Tap the microphone to start a conversation with our AI assistant. Describe your symptoms clearly.'
+            }
+            {conversationStatus === 'disconnected' && (
+              <span className="block mt-2 text-gray-800 font-medium text-sm sm:text-base">
+                Example: "I have chest pain since yesterday"
+              </span>
+            )}
           </p>
         </div>
 
-        {/* Skip to Demo Button */}
-        <div className="text-center mb-8 sm:mb-12">
+        {/* Conversation Controls & Demo Button */}
+        <div className="text-center mb-8 sm:mb-12 space-y-4">
+          {conversationStatus === 'connected' && (
+            <button
+              onClick={() => conversation.stopConversation()}
+              className="px-6 sm:px-8 py-2.5 sm:py-3 bg-red-500 hover:bg-red-600 text-white rounded-full text-base sm:text-lg transition-colors duration-200 mr-4"
+            >
+              End Conversation
+            </button>
+          )}
+          
           <button
             onClick={handleSkipToDemo}
             className="px-6 sm:px-8 py-2.5 sm:py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-base sm:text-lg transition-colors duration-200 border border-gray-200 hover:border-gray-300"
