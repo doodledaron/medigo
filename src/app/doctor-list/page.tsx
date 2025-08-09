@@ -2,91 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-
-interface Doctor {
-  id: string;
-  name: string;
-  specialty: string;
-  department: string;
-  rating: number;
-  patientsInQueue: number;
-  estimatedWait: string;
-  availableSlots: string[];
-  experience: number;
-  languages: string[];
-  image?: string;
-}
-
-const doctors: Doctor[] = [
-  {
-    id: '1',
-    name: 'Dr. James Wong',
-    specialty: 'Neurology Specialist',
-    department: 'Neurology',
-    rating: 4.8,
-    patientsInQueue: 3,
-    estimatedWait: '~10 min wait',
-    availableSlots: ['2:30 PM', '3:00 PM', '4:15 PM'],
-    experience: 12,
-    languages: ['English', 'Mandarin', 'Cantonese'],
-    image: '/doctor-1.jpg'
-  },
-  {
-    id: '2',
-    name: 'Dr. Sarah Chen',
-    specialty: 'Cardiology Specialist',
-    department: 'Cardiology',
-    rating: 4.9,
-    patientsInQueue: 1,
-    estimatedWait: '~5 min wait',
-    availableSlots: ['2:45 PM', '3:30 PM', '5:00 PM'],
-    experience: 15,
-    languages: ['English', 'Mandarin'],
-    image: '/doctor-2.jpg'
-  },
-  {
-    id: '3',
-    name: 'Dr. Ahmad Rahman',
-    specialty: 'Internal Medicine',
-    department: 'Internal Medicine',
-    rating: 4.7,
-    patientsInQueue: 5,
-    estimatedWait: '~15 min wait',
-    availableSlots: ['3:15 PM', '4:00 PM', '4:45 PM'],
-    experience: 10,
-    languages: ['English', 'Malay', 'Tamil'],
-    image: '/doctor-3.jpg'
-  },
-  {
-    id: '4',
-    name: 'Dr. Li Wei Ming',
-    specialty: 'Emergency Medicine',
-    department: 'Emergency',
-    rating: 4.6,
-    patientsInQueue: 2,
-    estimatedWait: '~8 min wait',
-    availableSlots: ['2:00 PM', '2:30 PM', '3:45 PM'],
-    experience: 8,
-    languages: ['English', 'Mandarin', 'Hokkien'],
-    image: '/doctor-4.jpg'
-  }
-];
-
-const departments = [
-  'All Departments',
-  'Cardiology',
-  'Neurology',
-  'Internal Medicine',
-  'Emergency',
-  'Orthopedics',
-  'Dermatology'
-];
+import { Doctor } from '../../types/medical';
+import { DoctorService } from '../../services/doctorService';
+import { departmentNames } from '../../data/departments';
+import { DataTransformers } from '../../utils/dataTransformers';
 
 export default function DoctorList() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedDepartment, setSelectedDepartment] = useState('All Departments');
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [sortBy, setSortBy] = useState<'rating' | 'wait' | 'experience'>('rating');
   const [showFilters, setShowFilters] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -96,28 +22,20 @@ export default function DoctorList() {
 
   useEffect(() => {
     setMounted(true);
+    // Load doctors data
+    const doctorsData = DoctorService.getAllDoctors().map(DataTransformers.transformDoctorForDisplay);
+    setDoctors(doctorsData);
   }, []);
 
   const handleBack = () => {
     router.back();
   };
 
-  const filteredAndSortedDoctors = doctors
-    .filter(doctor => 
-      selectedDepartment === 'All Departments' || doctor.department === selectedDepartment
-    )
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'rating':
-          return b.rating - a.rating;
-        case 'wait':
-          return a.patientsInQueue - b.patientsInQueue;
-        case 'experience':
-          return b.experience - a.experience;
-        default:
-          return 0;
-      }
-    });
+  const filteredDoctors = DoctorService.searchDoctors({
+    department: selectedDepartment === 'All Departments' ? undefined : selectedDepartment
+  });
+  
+  const filteredAndSortedDoctors = DoctorService.sortDoctors(filteredDoctors, sortBy).map(DataTransformers.transformDoctorForDisplay);
 
   const handleSelectDoctor = (doctor: Doctor) => {
     setSelectedDoctor(doctor);
@@ -125,7 +43,7 @@ export default function DoctorList() {
     const params = new URLSearchParams({
       hospitalId,
       hospitalName,
-      doctorId: doctor.id,
+      doctorId: doctor.id.toString(),
       doctorName: doctor.name,
       specialty: doctor.specialty
     });
@@ -187,7 +105,7 @@ export default function DoctorList() {
           <div className="px-4 pb-4 space-y-4 animate-slideDown">
             {/* Department Tabs */}
             <div className="flex overflow-x-auto pb-2">
-              {departments.map(dept => (
+              {departmentNames.map(dept => (
                 <button
                   key={dept}
                   onClick={() => setSelectedDepartment(dept)}
@@ -260,7 +178,7 @@ export default function DoctorList() {
                       <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                       </svg>
-                      <span>{doctor.experience}y exp</span>
+                      <span>{DataTransformers.standardizeExperience(doctor.experience)}</span>
                     </div>
                   </div>
                 </div>
@@ -291,7 +209,7 @@ export default function DoctorList() {
                     <svg className="w-4 h-4 mr-1 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                     </svg>
-                    <span className="text-sm font-semibold text-gray-900">{doctor.estimatedWait.replace('~', '').replace(' wait', '')}</span>
+                    <span className="text-sm font-semibold text-gray-900">{DataTransformers.standardizeWaitTime(doctor.estimatedWait)}</span>
                   </div>
                   <div className="text-xs text-gray-500">Est. Wait</div>
                 </div>

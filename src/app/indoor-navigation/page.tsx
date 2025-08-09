@@ -26,6 +26,8 @@ export default function IndoorNavigation() {
   const specialty = searchParams.get('specialty') || 'Neurology Specialist';
   const queuePosition = searchParams.get('queuePosition') || '3';
   const estimatedWait = searchParams.get('estimatedWait') || '25 min';
+  const etaToHospital = searchParams.get('etaToHospital') || '15 min';
+  const waitingTimeIfOnTime = searchParams.get('waitingTimeIfOnTime') || '10 min';
 
   const navigationSteps: NavigationStep[] = [
     {
@@ -68,6 +70,8 @@ export default function IndoorNavigation() {
         specialty,
         queuePosition,
         estimatedWait,
+        etaToHospital,
+        waitingTimeIfOnTime,
         checkpoint: '2',
         nextStep: '2'
       });
@@ -254,6 +258,8 @@ export default function IndoorNavigation() {
                   specialty,
                   queuePosition,
                   estimatedWait,
+                  etaToHospital,
+                  waitingTimeIfOnTime,
                   checkpoint: '3',
                   nextStep: '3'
                 });

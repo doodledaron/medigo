@@ -1,90 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Hospital } from '../../types/medical';
+import { HospitalService } from '../../services/hospitalService';
+import { DataTransformers } from '../../utils/dataTransformers';
 
-interface Hospital {
-  id: string;
-  name: string;
-  address: string;
-  travelTime: string;
-  distance: string;
-  waitTime: string;
-  peopleAhead: number;
-  type: 'public' | 'private';
-  imageUrl?: string;
-  specialties: string[];
-  rating: number;
-  phone: string;
-}
-
-const hospitals: Hospital[] = [
-  {
-    id: '1',
-    name: 'Singapore General Hospital',
-    address: 'Outram Road',
-    travelTime: '12 min',
-    distance: '2.5 km away',
-    waitTime: '25 min',
-    peopleAhead: 2,
-    type: 'public',
-    imageUrl: 'https://www.healthtrip.com/hospital/singapore-general-hospital',
-    specialties: ['Cardiology', 'Emergency', 'Internal Medicine'],
-    rating: 4.5,
-    phone: '+65 6222 3322'
-  },
-  {
-    id: '2',
-    name: 'National University Hospital',
-    address: 'Lower Kent Ridge Road',
-    travelTime: '18 min',
-    distance: '4.1 km away',
-    waitTime: '35 min',
-    peopleAhead: 4,
-    type: 'public',
-    imageUrl: 'https://www.ien.com.my/projects/hospital-sultanah-malihah%2C-langkawi',
-    specialties: ['Cardiology', 'Neurology', 'Oncology'],
-    rating: 4.3,
-    phone: '+65 6779 5555'
-  },
-  {
-    id: '3',
-    name: 'Mount Elizabeth Hospital',
-    address: 'Mount Elizabeth',
-    travelTime: '15 min',
-    distance: '3.2 km away',
-    waitTime: '15 min',
-    peopleAhead: 1,
-    type: 'private',
-    imageUrl: 'https://www.healthtrip.com/hospital/singapore-general-hospital',
-    specialties: ['Cardiology', 'Plastic Surgery', 'Orthopedics'],
-    rating: 4.7,
-    phone: '+65 6737 2666'
-  },
-  {
-    id: '4',
-    name: 'Raffles Hospital',
-    address: 'North Bridge Road',
-    travelTime: '22 min',
-    distance: '5.8 km away',
-    waitTime: '10 min',
-    peopleAhead: 0,
-    type: 'private',
-    imageUrl: 'https://www.mountelizabeth.com.sg/why-choose-us/mount-elizabeth-hospital',
-    specialties: ['Cardiology', 'Gastroenterology', 'Dermatology'],
-    rating: 4.6,
-    phone: '+65 6311 1111'
-  }
-];
 
 export default function NearbyHospitals() {
   const router = useRouter();
   const [filter, setFilter] = useState<'all' | 'public' | 'private'>('all');
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [mounted, setMounted] = useState(false);
+  const [queueInfo, setQueueInfo] = useState<{[key: number]: { waitTime: string; peopleAhead: number; travelTime: string }}>({});
 
-  const filteredHospitals = hospitals.filter(hospital => 
-    filter === 'all' || hospital.type === filter
-  );
+  useEffect(() => {
+    setMounted(true);
+    // Load hospitals data
+    const hospitalsData = HospitalService.getAllHospitals().map(DataTransformers.transformHospitalForDisplay);
+    setHospitals(hospitalsData);
+    
+    // Load queue information for each hospital
+    const queueData: {[key: number]: { waitTime: string; peopleAhead: number; travelTime: string }} = {};
+    hospitalsData.forEach(hospital => {
+      queueData[hospital.id] = HospitalService.getHospitalQueueInfo(hospital.id);
+    });
+    setQueueInfo(queueData);
+  }, []);
+
+  const filteredHospitals = HospitalService.searchHospitals({
+    type: filter === 'all' ? undefined : filter
+  }).map(DataTransformers.transformHospitalForDisplay);
 
   const handleBack = () => {
     router.back();
@@ -96,7 +43,7 @@ export default function NearbyHospitals() {
 
   const handleSelectHospital = (hospital: Hospital) => {
     const params = new URLSearchParams({
-      hospitalId: hospital.id,
+      hospitalId: hospital.id.toString(),
       hospitalName: hospital.name,
       hospitalAddress: hospital.address
     });
@@ -106,6 +53,8 @@ export default function NearbyHospitals() {
   const handleCall = (phone: string) => {
     window.open(`tel:${phone}`);
   };
+
+  if (!mounted) return null;
 
   return (
     <div className="min-h-screen" style={{backgroundColor: 'var(--primary-blue-light)'}}>
@@ -156,9 +105,9 @@ export default function NearbyHospitals() {
           >
             {/* Hospital Image */}
             <div className="relative h-40 sm:h-48 bg-gradient-to-br from-gray-200 to-gray-300">
-              {hospital.imageUrl ? (
+              {hospital.image ? (
                 <img
-                  src={hospital.imageUrl}
+                  src={hospital.image}
                   alt={hospital.name}
                   className="w-full h-full object-cover"
                 />
@@ -199,7 +148,7 @@ export default function NearbyHospitals() {
                       <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                       </svg>
-                      {hospital.travelTime}
+                      {queueInfo[hospital.id]?.travelTime || '12 min'}
                     </span>
                     <span className="flex items-center">
                       <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -212,12 +161,12 @@ export default function NearbyHospitals() {
 
                 {/* Expand/Collapse Button */}
                 <button
-                  onClick={() => toggleExpand(hospital.id)}
+                  onClick={() => toggleExpand(hospital.id.toString())}
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
                 >
                   <svg 
                     className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-500 transition-transform duration-300 ${
-                      expandedCard === hospital.id ? 'rotate-180' : ''
+                      expandedCard === hospital.id.toString() ? 'rotate-180' : ''
                     }`} 
                     fill="none" 
                     stroke="currentColor" 
@@ -231,18 +180,18 @@ export default function NearbyHospitals() {
               {/* Quick Stats */}
               <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
                 <div className="text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-gray-900">{hospital.waitTime}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-gray-900">{queueInfo[hospital.id]?.waitTime || '25 min'}</div>
                   <div className="text-xs sm:text-sm text-gray-500">Wait time</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xl sm:text-2xl font-bold text-gray-900">{hospital.peopleAhead}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-gray-900">{queueInfo[hospital.id]?.peopleAhead || 0}</div>
                   <div className="text-xs sm:text-sm text-gray-500">People ahead</div>
                 </div>
               </div>
 
               {/* Expanded Content */}
               <div className={`overflow-hidden transition-all duration-500 ease-out ${
-                expandedCard === hospital.id 
+                expandedCard === hospital.id.toString() 
                   ? 'max-h-96 opacity-100 mb-6' 
                   : 'max-h-0 opacity-0'
               }`}>
@@ -251,7 +200,7 @@ export default function NearbyHospitals() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">Rating</span>
                     <div className="flex items-center">
-                      <span className="text-lg font-semibold text-gray-900 mr-2">{hospital.rating}</span>
+                      <span className="text-lg font-semibold text-gray-900 mr-2">{DataTransformers.formatRating(hospital.rating)}</span>
                       <div className="flex">
                         {[...Array(5)].map((_, i) => (
                           <svg 

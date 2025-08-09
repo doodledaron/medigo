@@ -16,6 +16,8 @@ export default function NFCCheckpointScan() {
   const specialty = searchParams.get('specialty') || 'Neurology Specialist';
   const queuePosition = searchParams.get('queuePosition') || '3';
   const estimatedWait = searchParams.get('estimatedWait') || '25 min';
+  const etaToHospital = searchParams.get('etaToHospital') || '15 min';
+  const waitingTimeIfOnTime = searchParams.get('waitingTimeIfOnTime') || '10 min';
   const checkpoint = searchParams.get('checkpoint') || '2';
   const nextStep = searchParams.get('nextStep') || '2';
 
@@ -79,6 +81,8 @@ export default function NFCCheckpointScan() {
         specialty,
         queuePosition,
         estimatedWait,
+        etaToHospital,
+        waitingTimeIfOnTime,
         step: nextStep
       });
       router.push(`/indoor-navigation?${params.toString()}`);
@@ -203,14 +207,24 @@ export default function NFCCheckpointScan() {
                     checkpoint === '3' ? 'text-green-600' : 'text-blue-600'
                   }`}>{specialty}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Queue:</span>
-                  <span className="font-semibold text-gray-900">#{queuePosition}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Wait Time:</span>
-                  <span className="font-semibold text-gray-900">{estimatedWait}</span>
-                </div>
+                {checkpoint === '3' && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Queue Position:</span>
+                      <span className="font-semibold text-gray-900">#{queuePosition}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Waiting Time:</span>
+                      <span className="font-semibold text-gray-900">{estimatedWait}</span>
+                    </div>
+                  </>
+                )}
+                {checkpoint === '2' && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Hospital:</span>
+                    <span className="font-semibold text-gray-900">{hospitalName}</span>
+                  </div>
+                )}
               </div>
             </div>
 

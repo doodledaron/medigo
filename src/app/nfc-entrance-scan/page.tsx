@@ -16,6 +16,8 @@ export default function NFCEntranceScan() {
   const specialty = searchParams.get('specialty') || 'Neurology Specialist';
   const queuePosition = searchParams.get('queuePosition') || '3';
   const estimatedWait = searchParams.get('estimatedWait') || '25 min';
+  const etaToHospital = searchParams.get('etaToHospital') || '15 min';
+  const waitingTimeIfOnTime = searchParams.get('waitingTimeIfOnTime') || '10 min';
 
   useEffect(() => {
     setMounted(true);
@@ -42,7 +44,9 @@ export default function NFCEntranceScan() {
       doctorName,
       specialty,
       queuePosition,
-      estimatedWait
+      estimatedWait,
+      etaToHospital,
+      waitingTimeIfOnTime
     });
     router.push(`/indoor-navigation?${params.toString()}`);
   };
@@ -101,6 +105,8 @@ export default function NFCEntranceScan() {
               {scanComplete ? 'Scan Complete!' : isScanning ? 'Scanning...' : 'Scan Department NFC'}
             </h2>
             
+
+            
             <p className="text-gray-600 text-lg leading-relaxed">
               {scanComplete 
                 ? 'Welcome to the hospital! You have successfully checked in at the main entrance.' 
@@ -118,16 +124,12 @@ export default function NFCEntranceScan() {
                   <span className="font-semibold text-gray-900">{doctorName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Specialty:</span>
+                  <span className="text-gray-500">Department:</span>
                   <span className="font-semibold text-blue-600">{specialty}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Queue:</span>
-                  <span className="font-semibold text-gray-900">#{queuePosition}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Wait Time:</span>
-                  <span className="font-semibold text-gray-900">{estimatedWait}</span>
+                  <span className="text-gray-500">Hospital:</span>
+                  <span className="font-semibold text-gray-900">{hospitalName}</span>
                 </div>
               </div>
             </div>

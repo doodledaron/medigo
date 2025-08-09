@@ -10,6 +10,8 @@ interface AssignedDoctor {
   rating: number;
   queuePosition: number;
   estimatedWait: string;
+  etaToHospital: string;
+  waitingTimeIfOnTime: string;
 }
 
 export default function AIDoctorAssignment() {
@@ -21,15 +23,22 @@ export default function AIDoctorAssignment() {
 
   const hospitalName = searchParams.get('hospitalName') || 'Singapore General Hospital';
   const hospitalId = searchParams.get('hospitalId') || '1';
+  
+  // Check if doctor was pre-selected from doctor selection page
+  const preSelectedDoctorName = searchParams.get('doctorName');
+  const preSelectedSpecialty = searchParams.get('specialty');
+  const isDoctorPreSelected = !!(preSelectedDoctorName && preSelectedSpecialty);
 
-  // Simulated AI assignment
+  // Use pre-selected doctor info or default AI assignment
   const assignedDoctor: AssignedDoctor = {
-    name: 'Dr. James Wong',
-    specialty: 'Neurology Specialist',
-    department: 'Neurology Department',
+    name: preSelectedDoctorName || 'Dr. James Wong',
+    specialty: preSelectedSpecialty || 'Neurology Specialist',
+    department: preSelectedSpecialty || 'Neurology Department',
     rating: 4.8,
     queuePosition: 3,
-    estimatedWait: '25 min'
+    estimatedWait: '25 min',
+    etaToHospital: '15 min',
+    waitingTimeIfOnTime: '10 min'
   };
 
   // Mock patient data
@@ -42,14 +51,20 @@ export default function AIDoctorAssignment() {
   useEffect(() => {
     setMounted(true);
     
-    // Simulate AI processing time
-    const loadingTimer = setTimeout(() => {
+    if (isDoctorPreSelected) {
+      // Skip AI loading if doctor was pre-selected
       setIsLoading(false);
       setShowConfirmation(true);
-    }, 2500);
+    } else {
+      // Simulate AI processing time only when no doctor is pre-selected
+      const loadingTimer = setTimeout(() => {
+        setIsLoading(false);
+        setShowConfirmation(true);
+      }, 2500);
 
-    return () => clearTimeout(loadingTimer);
-  }, []);
+      return () => clearTimeout(loadingTimer);
+    }
+  }, [isDoctorPreSelected]);
 
   const handleBack = () => {
     router.back();
@@ -71,7 +86,9 @@ export default function AIDoctorAssignment() {
       doctorName: assignedDoctor.name,
       specialty: assignedDoctor.specialty,
       queuePosition: assignedDoctor.queuePosition.toString(),
-      estimatedWait: assignedDoctor.estimatedWait
+      estimatedWait: assignedDoctor.estimatedWait,
+      etaToHospital: assignedDoctor.etaToHospital,
+      waitingTimeIfOnTime: assignedDoctor.waitingTimeIfOnTime
     });
     router.push(`/nfc-entrance-scan?${params.toString()}`);
   };
@@ -191,26 +208,27 @@ export default function AIDoctorAssignment() {
 
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
                 <div className="flex items-center">
-                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                    <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+                    <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Queue Position</p>
-                    <p className="font-semibold text-gray-900">#{assignedDoctor.queuePosition}</p>
+                    <p className="text-sm text-gray-500">ETA to Hospital</p>
+                    <p className="font-semibold text-gray-900">{assignedDoctor.etaToHospital}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center">
-                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                    <svg className="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                    <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Est. Wait</p>
-                    <p className="font-semibold text-gray-900">{assignedDoctor.estimatedWait}</p>
+                    <p className="text-sm text-gray-500">Waiting Time if Reached Within</p>
+                    <p className="font-semibold text-gray-900">{assignedDoctor.waitingTimeIfOnTime}</p>
                   </div>
                 </div>
               </div>
