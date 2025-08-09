@@ -60,8 +60,16 @@ export default function NFCCheckpointScan() {
 
   const handleScanComplete = () => {
     if (checkpoint === '3') {
-      // Final checkpoint - navigation complete
-      router.push('/');
+      // Final checkpoint - navigate to queue status page
+      const params = new URLSearchParams({
+        hospitalId,
+        hospitalName,
+        doctorName,
+        specialty,
+        queuePosition,
+        estimatedWait
+      });
+      router.push(`/queue-status?${params.toString()}`);
     } else {
       // Return to navigation page with updated step
       const params = new URLSearchParams({
@@ -224,7 +232,7 @@ export default function NFCCheckpointScan() {
                       <path d="M13 7h8v2h-8v-2zm0 4h8v2h-8v-2zm6 4h2v2h-2v-2zm-6 0h4v2h-4v-2zM3 5v14c0 1.1.9 2 2 2h6V3H5c-1.1 0-2 .9-2 2zm6 12H5v-2h4v2zm0-4H5v-2h4v2zm0-4H5V7h4v2z"/>
                     )}
                   </svg>
-                  {checkpoint === '3' ? 'Complete Check-in' : 'Continue Navigation'}
+                  {checkpoint === '3' ? 'View Queue Status' : 'Continue Navigation'}
                 </button>
               ) : (
                 <button
