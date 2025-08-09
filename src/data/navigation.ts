@@ -126,7 +126,7 @@ export const getNavigationStepsForFloor = (floor: number): NavigationStep[] => {
 
 export const getDepartmentCheckpoint = (departmentName: string): Checkpoint | undefined => {
   return checkpoints.find(checkpoint => 
-    checkpoint.description.toLowerCase().includes(departmentName.toLowerCase())
+    checkpoint.description?.toLowerCase().includes(departmentName.toLowerCase())
   );
 };
 

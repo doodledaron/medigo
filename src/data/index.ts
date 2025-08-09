@@ -37,7 +37,7 @@ export const mockPatients = [
 ];
 
 // Mock appointment data
-export const mockAppointments = [
+export const mockAppointments: import('../types/medical').Appointment[] = [
   {
     id: 'BK_SAMPLE1',
     patient_name: 'John Doe',

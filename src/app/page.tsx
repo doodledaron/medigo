@@ -50,10 +50,6 @@ export default function Home() {
           <button
             onClick={handleMicClick}
             disabled={isTransitioning}
-            style={{
-              transform: `scale(${micScale})`,
-              transition: 'transform 0.8s cubic-bezier(0.4, 0.0, 0.2, 1)'
-            }}
             className={`
               relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 
               rounded-full shadow-2xl 
@@ -64,6 +60,8 @@ export default function Home() {
               ${isTransitioning ? 'cursor-not-allowed' : 'cursor-pointer'}
             `}
             style={{
+              transform: `scale(${micScale})`,
+              transition: 'transform 0.8s cubic-bezier(0.4, 0.0, 0.2, 1)',
               background: `linear-gradient(to bottom right, var(--primary-blue), var(--primary-blue-dark))`,
               boxShadow: isListening ? `0 25px 50px -12px var(--primary-blue-light)` : undefined,
               '--tw-ring-color': 'var(--primary-blue-light)'

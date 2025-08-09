@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function QueueStatus() {
+function QueueStatusContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
@@ -189,5 +189,13 @@ export default function QueueStatus() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function QueueStatus() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <QueueStatusContent />
+    </Suspense>
   );
 }

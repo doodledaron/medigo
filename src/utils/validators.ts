@@ -73,30 +73,31 @@ export class DataValidators {
   static validateAppointment(appointment: Partial<Appointment>): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    if (!appointment.doctorId || appointment.doctorId <= 0) {
+    if (!appointment.doctor_id) {
       errors.push('Valid doctor ID is required');
     }
 
-    if (!appointment.patientId || appointment.patientId <= 0) {
-      errors.push('Valid patient ID is required');
+    if (!appointment.patient_name || !appointment.patient_email) {
+      errors.push('Patient information is required');
     }
 
-    if (!appointment.hospitalId || appointment.hospitalId <= 0) {
+    if (!appointment.hospital_id) {
       errors.push('Valid hospital ID is required');
     }
 
-    if (!appointment.date || !this.validateDate(appointment.date)) {
+    if (!appointment.appointment_date || !this.validateDate(appointment.appointment_date)) {
       errors.push('Valid appointment date is required');
     }
 
-    if (!appointment.time || !this.validateTime(appointment.time)) {
+    if (!appointment.appointment_time || !this.validateTime(appointment.appointment_time)) {
       errors.push('Valid appointment time is required');
     }
 
-    const validTypes = ['consultation', 'follow-up', 'emergency', 'check-up'];
-    if (appointment.type && !validTypes.includes(appointment.type)) {
-      errors.push('Invalid appointment type');
-    }
+    // Note: Appointment interface doesn't have a type field
+    // const validTypes = ['consultation', 'follow-up', 'emergency', 'check-up'];
+    // if (appointment.type && !validTypes.includes(appointment.type)) {
+    //   errors.push('Invalid appointment type');
+    // }
 
     const validStatuses = ['scheduled', 'confirmed', 'in-progress', 'completed', 'cancelled'];
     if (appointment.status && !validStatuses.includes(appointment.status)) {

@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Doctor } from '../../types/medical';
 import { DoctorService } from '../../services/doctorService';
 import { departmentNames } from '../../data/departments';
 import { DataTransformers } from '../../utils/dataTransformers';
 
-export default function DoctorList() {
+function DoctorListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedDepartment, setSelectedDepartment] = useState('All Departments');
@@ -288,5 +288,13 @@ export default function DoctorList() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function DoctorList() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <DoctorListContent />
+    </Suspense>
   );
 }

@@ -9,7 +9,7 @@ export class AppointmentService {
     return mockAppointments;
   }
 
-  static getAppointmentById(id: number): Appointment | undefined {
+  static getAppointmentById(id: string): Appointment | undefined {
     return mockAppointments.find(appointment => appointment.id === id);
   }
 
@@ -39,7 +39,7 @@ export class AppointmentService {
       // Create appointment directly from request (since it comes from confirmed booking)
       const newAppointment: Appointment = {
         ...request,
-        status: 'confirmed',
+        status: 'confirmed' as const,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -76,7 +76,7 @@ export class AppointmentService {
   }
 
   static cancelAppointment(appointmentId: string): boolean {
-    const appointment = this.getAppointmentById(appointmentId);
+    const appointment = mockAppointments.find(app => app.id === appointmentId);
     if (!appointment) return false;
 
     // Update status
@@ -143,28 +143,29 @@ export class AppointmentService {
   }
 
   static rescheduleAppointment(
-    appointmentId: number, 
+    appointmentId: string, 
     newSlotTime: string
   ): { success: boolean; message: string } {
-    const appointment = this.getAppointmentById(appointmentId);
+    const appointment = mockAppointments.find(app => app.id === appointmentId);
     if (!appointment) {
       return { success: false, message: 'Appointment not found' };
     }
 
     // Check if new time slot is available
-    const doctor = DoctorService.getDoctorById(appointment.doctorId);
+    const doctorId = parseInt(appointment.doctor_id);
+    const doctor = !isNaN(doctorId) ? DoctorService.getDoctorById(doctorId) : null;
     if (!doctor?.availableSlots.includes(newSlotTime)) {
       return { success: false, message: 'Selected time slot is not available' };
     }
 
     // Free up old slot
-    doctor.availableSlots.push(appointment.slotTime);
+    doctor.availableSlots.push(appointment.appointment_time);
 
     // Book new slot
     doctor.availableSlots = doctor.availableSlots.filter(slot => slot !== newSlotTime);
 
     // Update appointment
-    appointment.slotTime = newSlotTime;
+    appointment.appointment_time = newSlotTime;
     appointment.status = 'scheduled';
     appointment.updatedAt = new Date().toISOString();
 
