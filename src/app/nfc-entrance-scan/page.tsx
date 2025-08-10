@@ -29,6 +29,16 @@ function NFCEntranceScanContent() {
     router.back();
   };
 
+  // const handleStartScan = () => {
+  //   setIsScanning(true);
+
+  //   // Simulate NFC scanning process
+  //   setTimeout(() => {
+  //     setScanComplete(true);
+  //     setIsScanning(false);
+  //   }, 3000);
+  // };
+
   const handleStartScan = async () => {
     try {
       if ("NDEFReader" in window) {
@@ -73,19 +83,19 @@ function NFCEntranceScanContent() {
     }
   };
 
-  // const handleScanComplete = () => {
-  //   const params = new URLSearchParams({
-  //     hospitalId,
-  //     hospitalName,
-  //     doctorName,
-  //     specialty,
-  //     queuePosition,
-  //     estimatedWait,
-  //     etaToHospital,
-  //     waitingTimeIfOnTime,
-  //   });
-  //   router.push(`/indoor-navigation?${params.toString()}`);
-  // };
+  const handleScanComplete = () => {
+    const params = new URLSearchParams({
+      hospitalId,
+      hospitalName,
+      doctorName,
+      specialty,
+      queuePosition,
+      estimatedWait,
+      etaToHospital,
+      waitingTimeIfOnTime,
+    });
+    router.push(`/indoor-navigation?${params.toString()}`);
+  };
 
   if (!mounted) return null;
 
@@ -229,51 +239,67 @@ function NFCEntranceScanContent() {
 
             {/* Action Button */}
             <div className="pt-6">
-              <button
-                onClick={handleStartScan}
-                disabled={isScanning}
-                className={`w-full font-semibold py-4 px-8 rounded-2xl transition-all duration-200 flex items-center justify-center ${
-                  isScanning
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-500 hover:bg-blue-600 text-white hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
-                }`}
-              >
-                {isScanning ? (
-                  <>
-                    <div className="w-5 h-5 mr-2 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                    Scanning...
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-6 h-6 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 18.5c-3.866 0-7-3.134-7-7s3.134-7 7-7 7 3.134 7 7-3.134 7-7 7z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9.5 14.5c0-1.5 1.5-3 3-3s3 1.5 3 3"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8.5v3"
-                      />
-                    </svg>
-                    Start Department Scan
-                  </>
-                )}
-              </button>
+              {scanComplete ? (
+                <button
+                  onClick={handleScanComplete}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-8 rounded-2xl transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
+                >
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M13 7h8v2h-8v-2zm0 4h8v2h-8v-2zm6 4h2v2h-2v-2zm-6 0h4v2h-4v-2zM3 5v14c0 1.1.9 2 2 2h6V3H5c-1.1 0-2 .9-2 2zm6 12H5v-2h4v2zm0-4H5v-2h4v2zm0-4H5V7h4v2z" />
+                  </svg>
+                  Proceed to Navigation
+                </button>
+              ) : (
+                <button
+                  onClick={handleStartScan}
+                  disabled={isScanning}
+                  className={`w-full font-semibold py-4 px-8 rounded-2xl transition-all duration-200 flex items-center justify-center ${
+                    isScanning
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-blue-500 hover:bg-blue-600 text-white hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+                  }`}
+                >
+                  {isScanning ? (
+                    <>
+                      <div className="w-5 h-5 mr-2 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                      Scanning...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-6 h-6 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 18.5c-3.866 0-7-3.134-7-7s3.134-7 7-7 7 3.134 7 7-3.134 7-7 7z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9.5 14.5c0-1.5 1.5-3 3-3s3 1.5 3 3"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8.5v3"
+                        />
+                      </svg>
+                      Start Department Scan
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

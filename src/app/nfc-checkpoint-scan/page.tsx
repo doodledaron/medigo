@@ -61,6 +61,16 @@ function NFCCheckpointScanContent() {
     router.back();
   };
 
+  // const handleStartScan = () => {
+  //   setIsScanning(true);
+
+  //   // Simulate NFC scanning process
+  //   setTimeout(() => {
+  //     setScanComplete(true);
+  //     setIsScanning(false);
+  //   }, 3000);
+  // };
+
   const handleStartScan = async () => {
     try {
       if (!("NDEFReader" in window)) {
