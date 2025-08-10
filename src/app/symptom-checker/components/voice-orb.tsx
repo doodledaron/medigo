@@ -11,10 +11,10 @@ interface VoiceOrbProps {
 
 export function VoiceOrb({ isListening, isSpeaking, onClick, conversationStatus }: VoiceOrbProps) {
   const [volumeLevel, setVolumeLevel] = useState(0);
-  const animationFrameRef = useRef<number>();
-  const audioContextRef = useRef<AudioContext>();
-  const analyserRef = useRef<AnalyserNode>();
-  const streamRef = useRef<MediaStream>();
+  const animationFrameRef = useRef<number | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     let mounted = true;

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { pageContainer, buttonTransition } from '../utils/transitions';
 
 export default function Home() {
   const [isListening, setIsListening] = useState(false);
@@ -9,6 +10,7 @@ export default function Home() {
   const [micScale, setMicScale] = useState(1);
   const [showMagicParticles, setShowMagicParticles] = useState(false);
   const [orbColorPhase, setOrbColorPhase] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
   const router = useRouter();
 
   const handleMicClick = async () => {
@@ -69,10 +71,13 @@ export default function Home() {
     setIsListening(false);
     setIsTransitioning(false);
     setMicScale(1);
+    
+    // Initialize page transition
+    setTimeout(() => setIsVisible(true), 50);
   }, []);
 
   return (
-    <div className="min-h-screen page-content transition-opacity duration-200" style={{backgroundColor: 'var(--primary-blue-light)'}}>
+    <div className={`${pageContainer(isVisible)} page-content`} style={{backgroundColor: 'var(--primary-blue-light)'}}>
       {/* Header Section */}
       <div className="px-4 py-8 sm:px-6 sm:py-12 text-center">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-3 sm:mb-4 text-gray-900 animate-fade-in-up">
@@ -93,8 +98,8 @@ export default function Home() {
             className={`
               relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 
               rounded-full shadow-2xl 
-              transition-all duration-500 ease-out
-              ${!isTransitioning ? 'hover:scale-105 hover:shadow-3xl active:scale-95' : ''}
+              ${buttonTransition()}
+              ${!isTransitioning ? 'hover:shadow-3xl' : ''}
               focus:outline-none focus:ring-4
               ${isListening ? 'animate-pulse' : ''}
               ${isTransitioning ? 'cursor-not-allowed magical-transition' : 'cursor-pointer'}
@@ -175,7 +180,7 @@ export default function Home() {
             </div>
           </button>
           
-          <p className={`mt-4 sm:mt-6 text-xl sm:text-2xl font-medium text-gray-700 transition-all duration-500 ${isTransitioning ? 'opacity-0 scale-95 translate-y-4' : 'opacity-100 scale-100 translate-y-0'}`}>
+          <p className={`mt-4 sm:mt-6 text-xl sm:text-2xl font-medium text-gray-700 transition-all duration-500 ease-out ${isTransitioning ? 'opacity-0 scale-95 translate-y-4' : 'opacity-100 scale-100 translate-y-0'}`}>
             {isTransitioning ? 'Connecting to AI...' : 'Start Speaking'}
           </p>
         </div>

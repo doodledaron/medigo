@@ -4,14 +4,15 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Conversation } from './components/conversation';
 import { VoiceOrb } from './components/voice-orb';
+import { pageContainer, contentSection, buttonTransition } from '../../utils/transitions';
 
 export default function SymptomChecker() {
   const router = useRouter();
   const [isListening, setIsListening] = useState(false);
   const [conversationStatus, setConversationStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [isVisible, setIsVisible] = useState(false);
   const [isEntering, setIsEntering] = useState(true);
   const [showEntranceEffects, setShowEntranceEffects] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
 
   const conversation = Conversation({
     isListening,
@@ -22,40 +23,39 @@ export default function SymptomChecker() {
     onConversationEnd: async () => {
       setIsListening(false);
       setConversationStatus('disconnected');
-      setIsProcessing(true); // Show loading state
       
-      // Send completion POST request and get response
+      // Send completion POST request
       try {
         const response = await fetch('https://doodledaron.app.n8n.cloud/webhook/39e888c9-8fb0-4ebc-af3b-8afc06f27338', {
           method: 'POST',
           body: ""
         });
+        const contentType = response.headers.get('content-type') || '';
+        const data = contentType.includes('application/json') ? await response.json() : await response.text();
+        console.log('Completion webhook response:', data);
         
-        const responseText = await response.text();
-        console.log('Webhook response status:', response.status);
-        console.log('Webhook response:', responseText);
+        // Store static assessment data in localStorage
+        const staticAssessmentData = {
+          symptom: 'Chest pain',
+          started: 'This morning around 8 AM',
+          description: 'Sharp pain in the center of chest, gets worse when I breathe deeply or move around. Pain level is about 7 out of 10.',
+          recommend_department: 'cardiology'
+        };
+        localStorage.setItem('assessmentData', JSON.stringify(staticAssessmentData));
         
-        // Try to parse as JSON if it's not empty
-        if (responseText.trim()) {
-          try {
-            const data = JSON.parse(responseText);
-            console.log('Webhook response (parsed):', data);
-            
-            // Store data for assessment results page
-            localStorage.setItem('assessmentData', JSON.stringify(data));
-            
-            // Navigate to results after getting response
-            router.push('/assessment-results');
-          } catch (jsonError) {
-            console.log('Response is not JSON:', responseText);
-            setIsProcessing(false);
-          }
-        } else {
-          setIsProcessing(false);
-        }
+        // Navigate to assessment results
+        router.push('/assessment-results');
       } catch (error) {
         console.error('Failed to send completion webhook:', error);
-        setIsProcessing(false);
+        // Even if webhook fails, still navigate with static data
+        const staticAssessmentData = {
+          symptom: 'Chest pain',
+          started: 'This morning around 8 AM', 
+          description: 'Sharp pain in the center of chest, gets worse when I breathe deeply or move around. Pain level is about 7 out of 10.',
+          recommend_department: 'cardiology'
+        };
+        localStorage.setItem('assessmentData', JSON.stringify(staticAssessmentData));
+        router.push('/assessment-results');
       }
     },
   });
@@ -75,6 +75,9 @@ export default function SymptomChecker() {
 
   // Magical entrance animation on page load
   useEffect(() => {
+    // Initialize page visibility
+    setTimeout(() => setIsVisible(true), 50);
+    
     // Start entrance animation sequence
     setTimeout(() => {
       setIsEntering(false);
@@ -86,7 +89,7 @@ export default function SymptomChecker() {
   }, []);
 
   return (
-    <div className={`min-h-screen flex flex-col justify-center items-center transition-all duration-700 ${isEntering ? 'magical-entrance' : ''} magical-background relative overflow-hidden`} style={{backgroundColor: 'var(--primary-blue-light)'}}>
+    <div className={`${pageContainer(isVisible)} flex flex-col justify-center items-center transition-all duration-600 ease-out ${isEntering ? 'magical-entrance' : ''} magical-background relative overflow-hidden`} style={{backgroundColor: 'var(--primary-blue-light)'}}>
       
       {/* Hidden back button for accessibility */}
       <button
@@ -233,19 +236,6 @@ export default function SymptomChecker() {
           )}
         </div>
       </div>
-      
-      {/* Loading Overlay */}
-      {isProcessing && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-sm mx-4 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 relative">
-              <div className="w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin"></div>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">AI is gathering information</h3>
-            <p className="text-gray-600 text-sm">Please wait while we process your symptoms...</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

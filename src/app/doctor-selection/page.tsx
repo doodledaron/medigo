@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { pageContainer, contentSection, buttonTransition } from '../../utils/transitions';
 
 interface Hospital {
   id: string;
@@ -17,6 +18,7 @@ function DoctorSelectionContent() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   // Get hospital info from URL params or default
   const hospitalId = searchParams.get('hospitalId') || '1';
@@ -25,6 +27,8 @@ function DoctorSelectionContent() {
 
   useEffect(() => {
     setMounted(true);
+    // Initialize page transition
+    setTimeout(() => setIsVisible(true), 50);
   }, []);
 
   const handleBack = () => {

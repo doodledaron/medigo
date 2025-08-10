@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "../styles/transitions.css";
 
 const futuraSans = {
   variable: "--font-futura-sans",
