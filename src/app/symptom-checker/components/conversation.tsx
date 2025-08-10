@@ -31,7 +31,7 @@ export function Conversation({ isListening, onConversationStart, onConversationE
 
       // Start the conversation with your agent
       await conversation.startSession({
-        agentId: 'agent_7501k27pgrddezy8ewpp628zrpem', // or 'YOUR_AGENT_ID'
+        agentId: 'agent_2201k27q1hkzejgr451vg10cv8y0', // or 'YOUR_AGENT_ID'
         connectionType: "webrtc",                   // or "websocket"
         // userId: "YOUR_CUSTOMER_USER_ID",            // optional
       });

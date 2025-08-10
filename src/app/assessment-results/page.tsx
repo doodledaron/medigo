@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 
 export default function AssessmentResults() {
   const [isVisible, setIsVisible] = useState(false);
+  const [assessmentData, setAssessmentData] = useState<any>(null);
   const router = useRouter();
 
   const handleBack = () => {
@@ -19,8 +20,19 @@ export default function AssessmentResults() {
     router.push('/nearby-hospitals');
   };
 
-  // Stagger animation on mount
+  // Load assessment data and stagger animation on mount
   useEffect(() => {
+    // Load data from localStorage
+    const storedData = localStorage.getItem('assessmentData');
+    if (storedData) {
+      try {
+        const parsed = JSON.parse(storedData);
+        setAssessmentData(parsed);
+      } catch (error) {
+        console.error('Failed to parse assessment data:', error);
+      }
+    }
+    
     setIsVisible(true);
   }, []);
 
@@ -59,8 +71,14 @@ export default function AssessmentResults() {
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 transition-colors duration-300" style={{'--hover-color': 'var(--tertiary-pink-dark)'} as React.CSSProperties}>Cardiology</h3>
-                  <p className="text-gray-600 text-sm sm:text-lg">Heart and cardiovascular specialist</p>
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1 transition-colors duration-300" style={{'--hover-color': 'var(--tertiary-pink-dark)'} as React.CSSProperties}>
+                    {assessmentData?.recommend_department ? assessmentData.recommend_department.charAt(0).toUpperCase() + assessmentData.recommend_department.slice(1) : 'Cardiology'}
+                  </h3>
+                  <p className="text-gray-600 text-sm sm:text-lg">
+                    {assessmentData?.recommend_department === 'cardio' ? 'Heart and cardiovascular specialist' : 
+                     assessmentData?.recommend_department ? `${assessmentData.recommend_department.charAt(0).toUpperCase() + assessmentData.recommend_department.slice(1)} specialist` : 
+                     'Heart and cardiovascular specialist'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -77,21 +95,24 @@ export default function AssessmentResults() {
             {/* Symptom */}
             <div className="group">
               <h3 className="text-xs sm:text-sm font-medium text-gray-500 mb-1 group-hover:text-gray-700 transition-colors duration-200">Symptom:</h3>
-              <p className="text-base sm:text-lg text-gray-900 group-hover:text-gray-700 transition-colors duration-200">Chest pain</p>
+              <p className="text-base sm:text-lg text-gray-900 group-hover:text-gray-700 transition-colors duration-200">
+                {assessmentData?.symptom || 'Chest pain'}
+              </p>
             </div>
 
             {/* Started */}
             <div className="group">
               <h3 className="text-xs sm:text-sm font-medium text-gray-500 mb-1 group-hover:text-gray-700 transition-colors duration-200">Started:</h3>
-              <p className="text-base sm:text-lg text-gray-900 group-hover:text-gray-700 transition-colors duration-200">This morning around 8 AM</p>
+              <p className="text-base sm:text-lg text-gray-900 group-hover:text-gray-700 transition-colors duration-200">
+                {assessmentData?.started || 'This morning around 8 AM'}
+              </p>
             </div>
 
             {/* Description */}
             <div className="group">
               <h3 className="text-xs sm:text-sm font-medium text-gray-500 mb-1 group-hover:text-gray-700 transition-colors duration-200">Description:</h3>
               <p className="text-sm sm:text-lg text-gray-900 leading-relaxed group-hover:text-gray-700 transition-colors duration-200">
-                Sharp pain in the center of chest, gets worse when I breathe deeply 
-                or move around. Pain level is about 7 out of 10.
+                {assessmentData?.description || 'Sharp pain in the center of chest, gets worse when I breathe deeply or move around. Pain level is about 7 out of 10.'}
               </p>
             </div>
           </div>
