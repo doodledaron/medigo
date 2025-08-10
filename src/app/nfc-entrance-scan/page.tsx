@@ -29,71 +29,49 @@ function NFCEntranceScanContent() {
     router.back();
   };
 
-  const handleStartScan = () => {
-    setIsScanning(true);
+  const handleStartScan = async () => {
+    try {
+      if ("NDEFReader" in window) {
+        setIsScanning(true);
 
-    // Simulate NFC scanning process
-    setTimeout(() => {
-      setScanComplete(true);
+        const ndef = new (window as any).NDEFReader();
+        await ndef.scan();
+        // await ndef.scan(
+        //   "CPID:MAIN_ENTRANCE\nTS:2025-08-09T14:32:00Z\nSIG:a7f93c29b998e49f0afbe13c5c96b76d"
+        // );
+
+        ndef.onreading = (event: any) => {
+          const decoder = new TextDecoder();
+          let tagContent = "";
+          for (const record of event.message.records) {
+            tagContent += decoder.decode(record.data) + "\n";
+          }
+
+          const lines = tagContent.trim().split("\n");
+          const data: Record<string, string> = {};
+          lines.forEach((line) => {
+            const [key, value] = line.split(":");
+            data[key] = value;
+          });
+
+          // Example: validate CPID
+          if (data.CPID === "MAIN_ENTRANCE") {
+            setScanComplete(true);
+            setIsScanning(false);
+          } else {
+            setScanComplete(false); // reset
+            setIsScanning(false); // stop scanning
+            alert("Invalid checkpoint tag");
+          }
+        };
+      } else {
+        alert("Web NFC is not supported on this device/browser.");
+      }
+    } catch (error) {
+      console.error(error);
       setIsScanning(false);
-      // Redirect automatically once scan is complete
-      const params = new URLSearchParams({
-        hospitalId,
-        hospitalName,
-        doctorName,
-        specialty,
-        queuePosition,
-        estimatedWait,
-        etaToHospital,
-        waitingTimeIfOnTime,
-      });
-      router.push(`/indoor-navigation?${params.toString()}`);
-    }, 3000);
+    }
   };
-
-  // const handleStartScan = async () => {
-  //   try {
-  //     if ("NDEFReader" in window) {
-  //       setIsScanning(true);
-
-  //       const ndef = new (window as any).NDEFReader();
-  //       await ndef.scan();
-  //       // await ndef.scan(
-  //       //   "CPID:MAIN_ENTRANCE\nTS:2025-08-09T14:32:00Z\nSIG:a7f93c29b998e49f0afbe13c5c96b76d"
-  //       // );
-
-  //       ndef.onreading = (event: any) => {
-  //         const decoder = new TextDecoder();
-  //         let tagContent = "";
-  //         for (const record of event.message.records) {
-  //           tagContent += decoder.decode(record.data) + "\n";
-  //         }
-
-  //         const lines = tagContent.trim().split("\n");
-  //         const data: Record<string, string> = {};
-  //         lines.forEach((line) => {
-  //           const [key, value] = line.split(":");
-  //           data[key] = value;
-  //         });
-
-  //         // Example: validate CPID
-  //         if (data.CPID === "MAIN_ENTRANCE") {
-  //           setScanComplete(true);
-  //           setIsScanning(false);
-  //         } else {
-  //           setScanComplete(false); // reset
-  //           setIsScanning(false); // stop scanning
-  //           alert("Invalid checkpoint tag");
-  //         }
-  //       };
-  //     } else {
-  //       alert("Web NFC is not supported on this device/browser.");
-  //     }
-  //   } catch (error) {
-  //     console.error(error);
-  //     setIsScanning(false);
-  //   }
-  // };
 
   // const handleScanComplete = () => {
   //   const params = new URLSearchParams({
