@@ -8,7 +8,7 @@ interface NavigationStep {
   title: string;
   description: string;
   instruction: string;
-  videoUrl: string; // new field
+  videoUrl: string;
 }
 
 function IndoorNavigationContent() {
@@ -19,7 +19,6 @@ function IndoorNavigationContent() {
     return step ? parseInt(step) : 1;
   });
   const [mounted, setMounted] = useState(false);
-  const [videoPlaying, setVideoPlaying] = useState(false);
 
   const hospitalName =
     searchParams.get("hospitalName") || "Singapore General Hospital";
@@ -44,13 +43,12 @@ function IndoorNavigationContent() {
     },
     {
       id: 2,
-      title: "Checkpoint 1 to your department",
-      description:
-        "You have reached the registration area - scan NFC to continue",
+      title: "Checkpoint 1 to Elevator Area",
+      description: "You have reached the elevator area - scan NFC to continue",
       instruction:
         "Scan the NFC tag at the elevator area to confirm your location",
       videoUrl:
-        "https://drive.google.com/file/d/19BqqgZfTjlNTbFEIPjp7wtJSovrPBVkp/preview",
+        "https://drive.google.com/file/d/1tZ1qHYSnGq-3dOiIi9EH3woxCUh59-zr/preview",
     },
     {
       id: 3,
@@ -58,7 +56,8 @@ function IndoorNavigationContent() {
       description: "Navigate to your department and scan at reception",
       instruction:
         "Take elevator to Level 3, turn right to Neurology Department",
-      videoUrl: "",
+      videoUrl:
+        "https://drive.google.com/file/d/1tZ1qHYSnGq-3dOiIi9EH3woxCUh59-zr/preview",
     },
   ];
 
@@ -74,7 +73,22 @@ function IndoorNavigationContent() {
 
   const handleNextStep = () => {
     if (currentStep === 1) {
-      // After step 1, need to scan at checkpoint 2
+      // After step 1, need to scan at checkpoint 1
+      const params = new URLSearchParams({
+        hospitalId,
+        hospitalName,
+        doctorName,
+        specialty,
+        queuePosition,
+        estimatedWait,
+        etaToHospital,
+        waitingTimeIfOnTime,
+        checkpoint: "1",
+        nextStep: "2",
+      });
+      router.push(`/nfc-checkpoint-scan?${params.toString()}`);
+    } else if (currentStep === 2) {
+      // After step 2, need to scan at checkpoint 2
       const params = new URLSearchParams({
         hospitalId,
         hospitalName,
@@ -85,7 +99,22 @@ function IndoorNavigationContent() {
         etaToHospital,
         waitingTimeIfOnTime,
         checkpoint: "2",
-        nextStep: "2",
+        nextStep: "3",
+      });
+      router.push(`/nfc-checkpoint-scan?${params.toString()}`);
+    } else if (currentStep === 3) {
+      // After step 3, go to final checkpoint
+      const params = new URLSearchParams({
+        hospitalId,
+        hospitalName,
+        doctorName,
+        specialty,
+        queuePosition,
+        estimatedWait,
+        etaToHospital,
+        waitingTimeIfOnTime,
+        checkpoint: "3",
+        nextStep: "3",
       });
       router.push(`/nfc-checkpoint-scan?${params.toString()}`);
     } else if (currentStep < totalSteps) {
@@ -97,14 +126,6 @@ function IndoorNavigationContent() {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
-  };
-
-  const handlePlayVideo = () => {
-    setVideoPlaying(true);
-    // Simulate video playing
-    setTimeout(() => {
-      setVideoPlaying(false);
-    }, 5000);
   };
 
   const handleCompleteNavigation = () => {
@@ -265,7 +286,7 @@ function IndoorNavigationContent() {
               onClick={handleNextStep}
               className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
             >
-              Proceed to Checkpoint 1
+              Scan NFC Tag
               <svg
                 className="w-5 h-5 ml-2"
                 fill="none"
@@ -282,6 +303,26 @@ function IndoorNavigationContent() {
             </button>
           ) : currentStep === 2 ? (
             <button
+              onClick={handleNextStep}
+              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
+            >
+              Scan NFC Tag
+              <svg
+                className="w-5 h-5 ml-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          ) : currentStep === 3 ? (
+            <button
               onClick={() => {
                 const params = new URLSearchParams({
                   hospitalId,
@@ -297,22 +338,16 @@ function IndoorNavigationContent() {
                 });
                 router.push(`/nfc-checkpoint-scan?${params.toString()}`);
               }}
-              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
             >
-              Proceed to Final Destination
               <svg
-                className="w-5 h-5 ml-2"
-                fill="none"
-                stroke="currentColor"
+                className="w-5 h-5 mr-2"
+                fill="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
+                <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" />
               </svg>
+              Complete Navigation
             </button>
           ) : (
             <button
