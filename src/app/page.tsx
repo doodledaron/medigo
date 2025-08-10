@@ -2,26 +2,68 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { pageContainer, buttonTransition } from '../utils/transitions';
 
 export default function Home() {
   const [isListening, setIsListening] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [micScale, setMicScale] = useState(1);
+  const [showMagicParticles, setShowMagicParticles] = useState(false);
+  const [orbColorPhase, setOrbColorPhase] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
   const router = useRouter();
 
-  const handleMicClick = () => {
+  const handleMicClick = async () => {
     if (isTransitioning) return;
     
     setIsListening(true);
     setIsTransitioning(true);
+    setShowMagicParticles(true);
     
-    // Start enlargement animation
-    setMicScale(1.5);
+    // Send POST request to webhook -> post location, preference, insuranceRef
+    try {
+      await fetch('https://doodledaron.app.n8n.cloud/webhook/84d12472-a1d7-45e7-bff6-3cd6021be8ef', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          location: { lat: 3.139, lng: 101.686 },
+          preference: "public",
+          insuranceRef: true
+        })
+      });
+    } catch (error) {
+      console.error('Failed to send webhook request:', error);
+    }
     
-    // Navigate after animation completes
+    // Multi-stage magical transition
+    // Stage 1: Initial scale and magic particles (0-300ms)
+    setMicScale(1.3);
+    
+    // Stage 2: Color morphing begins (300ms)
     setTimeout(() => {
-      router.push('/symptom-checker');
-    }, 800);
+      setOrbColorPhase(1);
+      setMicScale(1.6);
+    }, 300);
+    
+    // Stage 3: Final scaling and shimmer (600ms)
+    setTimeout(() => {
+      setOrbColorPhase(2);
+      setMicScale(2.2);
+    }, 600);
+    
+    // Stage 4: Navigate with fade effect (1000ms)
+    setTimeout(() => {
+      const pageContent = document.querySelector('.page-content');
+      if (pageContent) {
+        pageContent.classList.add('page-fade-out');
+      }
+      
+      setTimeout(() => {
+        router.push('/symptom-checker');
+      }, 200);
+    }, 1000);
   };
 
   // Reset states when component mounts (when returning from symptom checker)
@@ -29,17 +71,20 @@ export default function Home() {
     setIsListening(false);
     setIsTransitioning(false);
     setMicScale(1);
+    
+    // Initialize page transition
+    setTimeout(() => setIsVisible(true), 50);
   }, []);
 
   return (
-    <div className="min-h-screen" style={{backgroundColor: 'var(--primary-blue-light)'}}>
-      {/* Blue Header Section */}
-      <div className="text-white px-4 py-8 sm:px-6 sm:py-12 text-center" style={{background: 'linear-gradient(to right, var(--primary-blue), var(--primary-blue-dark))'}}>
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-3 sm:mb-4">
-          How are you, Uncle Tan?
+    <div className={`${pageContainer(isVisible)} page-content`} style={{backgroundColor: 'var(--primary-blue-light)'}}>
+      {/* Header Section */}
+      <div className="px-4 py-8 sm:px-6 sm:py-12 text-center">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold mb-3 sm:mb-4 text-gray-900 animate-fade-in-up">
+        Uncle Tan, today you good?
         </h1>
-        <p className="text-blue-100 text-base sm:text-lg">
-          Tap the mic to tell me your symptoms
+        <p className="text-gray-600 text-base sm:text-lg animate-fade-in-up animation-delay-300">
+        Tap mic, tell me what happen
         </p>
       </div>
 
@@ -53,25 +98,71 @@ export default function Home() {
             className={`
               relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 
               rounded-full shadow-2xl 
-              transition-all duration-300 ease-out
-              ${!isTransitioning ? 'hover:scale-105 hover:shadow-3xl active:scale-95' : ''}
+              ${buttonTransition()}
+              ${!isTransitioning ? 'hover:shadow-3xl' : ''}
               focus:outline-none focus:ring-4
               ${isListening ? 'animate-pulse' : ''}
-              ${isTransitioning ? 'cursor-not-allowed' : 'cursor-pointer'}
+              ${isTransitioning ? 'cursor-not-allowed magical-transition' : 'cursor-pointer'}
             `}
             style={{
-              transform: `scale(${micScale})`,
-              transition: 'transform 0.8s cubic-bezier(0.4, 0.0, 0.2, 1)',
-              background: `linear-gradient(to bottom right, var(--primary-blue), var(--primary-blue-dark))`,
-              boxShadow: isListening ? `0 25px 50px -12px var(--primary-blue-light)` : undefined,
-              '--tw-ring-color': 'var(--primary-blue-light)'
+              transform: `scale(${micScale}) ${isTransitioning ? 'rotate(360deg)' : ''}`,
+              transition: isTransitioning 
+                ? 'all 1.2s cubic-bezier(0.4, 0.0, 0.2, 1)' 
+                : 'transform 0.3s ease-out',
+              background: orbColorPhase === 0 
+                ? `linear-gradient(to bottom right, var(--primary-blue), var(--primary-blue-dark))`
+                : orbColorPhase === 1
+                ? `linear-gradient(45deg, var(--primary-blue), var(--tertiary-pink), var(--primary-blue-dark))`
+                : `linear-gradient(135deg, var(--tertiary-pink), var(--tertiary-pink-dark), var(--primary-blue))`,
+              boxShadow: isTransitioning 
+                ? `0 35px 80px -12px rgba(236, 72, 153, 0.8), 0 0 40px rgba(59, 130, 246, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.2)`
+                : isListening 
+                ? `0 25px 50px -12px var(--primary-blue-light)` 
+                : undefined,
+              '--tw-ring-color': 'var(--primary-blue-light)',
+              filter: isTransitioning ? 'blur(0.5px) brightness(1.2)' : undefined
             } as React.CSSProperties}
           >
-            {/* Subtle glow animation */}
+            {/* Magical glow animations */}
             <div className={`
               absolute inset-0 rounded-full 
-              ${isListening ? 'animate-ping opacity-20' : ''}
+              ${isListening && !isTransitioning ? 'animate-ping opacity-20' : ''}
+              ${isTransitioning ? 'magical-glow' : ''}
             `} style={{backgroundColor: isListening ? 'var(--primary-blue-light)' : undefined}}></div>
+            
+            {/* Magic particles */}
+            {showMagicParticles && (
+              <>
+                <div className="absolute -inset-8 pointer-events-none">
+                  {[...Array(12)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="absolute w-2 h-2 bg-gradient-to-r from-blue-400 to-pink-400 rounded-full animate-magical-particle"
+                      style={{
+                        left: `${50 + 30 * Math.cos(i * 30 * Math.PI / 180)}%`,
+                        top: `${50 + 30 * Math.sin(i * 30 * Math.PI / 180)}%`,
+                        animationDelay: `${i * 100}ms`,
+                        animationDuration: '1.5s'
+                      }}
+                    />
+                  ))}
+                </div>
+                <div className="absolute -inset-12 pointer-events-none">
+                  {[...Array(8)].map((_, i) => (
+                    <div
+                      key={i + 12}
+                      className="absolute w-1 h-1 bg-white rounded-full animate-sparkle"
+                      style={{
+                        left: `${50 + 40 * Math.cos(i * 45 * Math.PI / 180)}%`,
+                        top: `${50 + 40 * Math.sin(i * 45 * Math.PI / 180)}%`,
+                        animationDelay: `${300 + i * 150}ms`,
+                        animationDuration: '1.2s'
+                      }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
             
             {/* Microphone Icon */}
             <div className="relative z-10 flex items-center justify-center h-full">
@@ -89,8 +180,8 @@ export default function Home() {
             </div>
           </button>
           
-          <p className={`mt-4 sm:mt-6 text-xl sm:text-2xl font-medium text-gray-700 transition-opacity duration-300 ${isTransitioning ? 'opacity-50' : 'opacity-100'}`}>
-            {isTransitioning ? 'Opening...' : 'Start Speaking'}
+          <p className={`mt-4 sm:mt-6 text-xl sm:text-2xl font-medium text-gray-700 transition-all duration-500 ease-out ${isTransitioning ? 'opacity-0 scale-95 translate-y-4' : 'opacity-100 scale-100 translate-y-0'}`}>
+            {isTransitioning ? 'Connecting to AI...' : 'Start Speaking'}
           </p>
         </div>
 

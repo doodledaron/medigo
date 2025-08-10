@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { Hospital } from '../../types/medical';
 import { HospitalService } from '../../services/hospitalService';
 import { DataTransformers } from '../../utils/dataTransformers';
+import { HospitalSearchResponse } from '../../types/api';
+import { pageContainer, contentSection, cardTransition, buttonTransition } from '../../utils/transitions';
+import { hospitals as staticHospitals } from '../../data/hospitals';
 
 
 export default function NearbyHospitals() {
@@ -13,25 +16,150 @@ export default function NearbyHospitals() {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const [queueInfo, setQueueInfo] = useState<{[key: number]: { waitTime: string; peopleAhead: number; travelTime: string }}>({});
 
-  useEffect(() => {
-    setMounted(true);
-    // Load hospitals data
-    const hospitalsData = HospitalService.getAllHospitals().map(DataTransformers.transformHospitalForDisplay);
-    setHospitals(hospitalsData);
+  // Image mapping for different hospital types and names
+  const getHospitalImage = (hospitalName: string, hospitalType: 'public' | 'private', hospitalId?: string): string => {
+    // Try to match by name first with more sophisticated matching
+    const normalizedApiName = hospitalName.toLowerCase().replace(/\s+/g, ' ').trim();
     
-    // Load queue information for each hospital
-    const queueData: {[key: number]: { waitTime: string; peopleAhead: number; travelTime: string }} = {};
-    hospitalsData.forEach(hospital => {
-      queueData[hospital.id] = HospitalService.getHospitalQueueInfo(hospital.id);
+    const staticHospital = staticHospitals.find(h => {
+      const normalizedStaticName = h.name.toLowerCase().replace(/\s+/g, ' ').trim();
+      
+      // Exact match
+      if (normalizedApiName === normalizedStaticName) return true;
+      
+      // Check if key words match
+      const apiWords = normalizedApiName.split(' ');
+      const staticWords = normalizedStaticName.split(' ');
+      
+      // Find common significant words (ignore common words like 'hospital', 'general', etc.)
+      const skipWords = ['hospital', 'general', 'medical', 'center', 'centre'];
+      const apiSignificantWords = apiWords.filter(word => !skipWords.includes(word) && word.length > 2);
+      const staticSignificantWords = staticWords.filter(word => !skipWords.includes(word) && word.length > 2);
+      
+      // If we have significant word matches
+      return apiSignificantWords.some(apiWord => 
+        staticSignificantWords.some(staticWord => 
+          staticWord.includes(apiWord) || apiWord.includes(staticWord)
+        )
+      );
     });
+    
+    if (staticHospital?.image) {
+      console.log(`🖼️ Matched API hospital "${hospitalName}" with static hospital "${staticHospital.name}" image`);
+      return staticHospital.image;
+    }
+    
+    // Use static hospital images as defaults, cycling through them
+    const staticImages = staticHospitals
+      .filter(h => h.type === hospitalType && h.image)
+      .map(h => h.image!);
+    
+    if (staticImages.length > 0) {
+      // Use hospital ID or name to consistently assign the same image to the same hospital
+      const seed = hospitalId ? parseInt(hospitalId.replace(/\D/g, '')) : hospitalName.charCodeAt(0);
+      const imageIndex = seed % staticImages.length;
+      console.log(`🎯 Assigned ${hospitalType} hospital "${hospitalName}" static image #${imageIndex}`);
+      return staticImages[imageIndex];
+    }
+    
+    // Fallback images if no static images available
+    const fallbackImages = {
+      public: 'https://vaidam-images.s3.ap-southeast-1.amazonaws.com/files/main_building_changi_general_hospital_singapore.jpg',
+      private: 'https://static.cdntap.com/tap-assets-prod/wp-content/uploads/sites/12/2020/09/istockphoto-1204775285-612x612-1.jpg'
+    };
+    
+    return fallbackImages[hospitalType];
+  };
+  
+  // Transform API hospital data to match existing Hospital interface
+  const transformApiHospitalToHospital = (apiHospital: HospitalSearchResponse['top8'][0]): Hospital => {
+    // Normalize hospital type from API to match our interface
+    const normalizeHospitalType = (type: string): 'public' | 'private' => {
+      const lowerType = type.toLowerCase().trim();
+      if (lowerType.includes('public') || lowerType.includes('government')) return 'public';
+      if (lowerType.includes('private')) return 'private';
+      // Default to public if unclear
+      return 'public';
+    };
+
+    const hospitalType = normalizeHospitalType(apiHospital.hospital_type);
+
+    return {
+      id: parseInt(apiHospital.id.replace('HSP', '')) || Math.random() * 1000,
+      name: apiHospital.name,
+      address: apiHospital.address,
+      type: hospitalType,
+      specialties: ['General Medicine', 'Emergency'], // Default specialties since not provided in API
+      rating: 4.5, // Default rating since not provided in API
+      distance: apiHospital.traffic.distance_text,
+      phone: apiHospital.phone,
+      emergencyServices: true,
+      image: getHospitalImage(apiHospital.name, hospitalType, apiHospital.id)
+    };
+  };
+
+  useEffect(() => {
+    console.log('🟢 Nearby Hospitals - Page loaded');
+    setMounted(true);
+    
+    // Initialize page transition
+    setTimeout(() => setIsVisible(true), 50);
+    
+    // Try to load hospital search response from localStorage first
+    const storedResponse = localStorage.getItem('hospitalSearchResponse');
+    console.log('💾 Stored response from localStorage:', storedResponse);
+    
+    let hospitalsData: Hospital[] = [];
+    let queueData: {[key: number]: { waitTime: string; peopleAhead: number; travelTime: string }} = {};
+    
+    if (storedResponse) {
+      try {
+        const apiResponse: HospitalSearchResponse = JSON.parse(storedResponse);
+        console.log('📋 Parsed API response:', apiResponse);
+        console.log('🏥 Number of hospitals from API:', apiResponse.top8?.length || 0);
+        
+        // Transform API response to Hospital interface
+        hospitalsData = apiResponse.top8.map(transformApiHospitalToHospital);
+        console.log('🔄 Transformed hospitals data:', hospitalsData);
+        
+        // Transform API queue data
+        apiResponse.top8.forEach(apiHospital => {
+          const hospitalId = parseInt(apiHospital.id.replace('HSP', '')) || Math.random() * 1000;
+          queueData[hospitalId] = {
+            waitTime: `${apiHospital.avg_wait_minutes} min`,
+            peopleAhead: apiHospital.current_queue_people,
+            travelTime: `${apiHospital.travel_min_in_traffic} min`
+          };
+        });
+        console.log('⏱️ Queue data from API:', queueData);
+      } catch (error) {
+        console.error('❌ Failed to parse hospital search response:', error);
+      }
+    } else {
+      console.log('⚠️ No stored response found in localStorage');
+    }
+    
+    // Fallback to static data if no API response available
+    if (hospitalsData.length === 0) {
+      console.log('🔄 Falling back to static data');
+      hospitalsData = HospitalService.getAllHospitals().map(DataTransformers.transformHospitalForDisplay);
+      hospitalsData.forEach(hospital => {
+        queueData[hospital.id] = HospitalService.getHospitalQueueInfo(hospital.id);
+      });
+      console.log('📊 Using static hospitals data:', hospitalsData.length, 'hospitals');
+    }
+    
+    console.log('🏥 Final hospitals data to display:', hospitalsData);
+    setHospitals(hospitalsData);
     setQueueInfo(queueData);
   }, []);
 
-  const filteredHospitals = HospitalService.searchHospitals({
-    type: filter === 'all' ? undefined : filter
-  }).map(DataTransformers.transformHospitalForDisplay);
+  const filteredHospitals = hospitals.filter(hospital => 
+    filter === 'all' || hospital.type === filter
+  );
 
   const handleBack = () => {
     router.back();
@@ -57,7 +185,7 @@ export default function NearbyHospitals() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen" style={{backgroundColor: 'var(--primary-blue-light)'}}>
+    <div className={`${pageContainer(isVisible)}`} style={{backgroundColor: 'var(--primary-blue-light)'}}>
       {/* Header */}
       <div className="bg-white shadow-sm px-4 py-3 sm:py-4">
         <div className="flex items-center">
@@ -73,26 +201,28 @@ export default function NearbyHospitals() {
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="flex px-4 py-2 overflow-x-auto">
-          {[
-            { key: 'all', label: 'All' },
-            { key: 'public', label: 'Public' },
-            { key: 'private', label: 'Private' }
-          ].map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key as typeof filter)}
-              className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full mr-2 sm:mr-3 transition-all duration-200 font-medium whitespace-nowrap text-sm sm:text-base ${
-                filter === tab.key
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+      {/* Minimal Filter */}
+      <div className="px-4 py-3">
+        <div className="flex items-center justify-center">
+          <div className="inline-flex bg-gray-100 rounded-lg p-1">
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'public', label: 'Public' },
+              { key: 'private', label: 'Private' }
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setFilter(tab.key as typeof filter)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  filter === tab.key
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -101,7 +231,7 @@ export default function NearbyHospitals() {
         {filteredHospitals.map((hospital) => (
           <div
             key={hospital.id}
-            className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md"
+            className={`bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 overflow-hidden ${cardTransition()}`}
           >
             {/* Hospital Image */}
             <div className="relative h-40 sm:h-48 bg-gradient-to-br from-gray-200 to-gray-300">
@@ -253,14 +383,14 @@ export default function NearbyHospitals() {
               <div className="flex space-x-2 sm:space-x-3">
                 <button
                   onClick={() => handleSelectHospital(hospital)}
-                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl sm:rounded-2xl transition-all duration-200 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] text-sm sm:text-base"
+                  className={`flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl sm:rounded-2xl ${buttonTransition()} hover:shadow-md text-sm sm:text-base`}
                 >
                   Select Hospital
                 </button>
                 
                 <button
                   onClick={() => handleCall(hospital.phone)}
-                  className="p-2.5 sm:p-3 bg-gray-100 hover:bg-gray-200 rounded-xl sm:rounded-2xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  className={`p-2.5 sm:p-3 bg-gray-100 hover:bg-gray-200 rounded-xl sm:rounded-2xl ${buttonTransition()}`}
                 >
                   <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />

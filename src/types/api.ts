@@ -73,3 +73,57 @@ export interface SymptomAssessment {
   suggestedSpecialty?: string;
   urgencyLevel: 'low' | 'medium' | 'high' | 'emergency';
 }
+
+export interface HospitalSearchRequest {
+  sessionId: string;
+  symptoms: string;
+  onset: string;
+  location: {
+    lat: number;
+    lng: number;
+  };
+  preference: string;
+  insuranceRef: boolean;
+  department: string;
+}
+
+export interface HospitalSearchResponse {
+  origin: {
+    lat: number;
+    lng: number;
+  };
+  destination_addresses: string[];
+  origin_addresses: string[];
+  top8: Array<{
+    id: string;
+    name: string;
+    address: string;
+    location_in_latidude_and_longitude: {
+      lat: number;
+      lng: number;
+    };
+    phone: string;
+    website: string;
+    hospital_type: string;
+    distance_km_from_user_location: number;
+    current_queue_people: number;
+    avg_wait_minutes: number;
+    doctors_available: number;
+    ranking_score: number;
+    from_user_location: {
+      lat: number;
+      lng: number;
+    };
+    traffic: {
+      status: string;
+      distance_text: string;
+      distance_meters: number;
+      duration_text: string;
+      duration_seconds: number;
+      duration_in_traffic_text: string;
+      duration_in_traffic_seconds: number;
+    };
+    travel_min_in_traffic: number;
+    eta_total_min: number;
+  }>;
+}
